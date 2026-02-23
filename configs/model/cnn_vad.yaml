@@ -1,0 +1,23 @@
+# @package model
+
+_target_: src.vad.models.cnn_vad.CNNVAD
+
+# Model architecture
+input_dim: 80  # mel-spectrogram features
+hidden_dims: [128, 64, 32]
+kernel_sizes: [3, 3, 3]
+dropout: 0.2
+
+# Feature extraction
+features:
+  n_fft: 1024
+  hop_length: 512
+  win_length: 1024
+  n_mels: 80
+  fmin: 0
+  fmax: 8000
+
+# Training parameters
+learning_rate: 0.001
+batch_size: 32
+num_epochs: 100

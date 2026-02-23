@@ -1,0 +1,23 @@
+# @package evaluation
+
+_target_: src.vad.eval.evaluator.VADEvaluator
+
+# Evaluation metrics
+metrics:
+  - frame_accuracy
+  - frame_f1
+  - segment_f1
+  - precision
+  - recall
+  - auc_roc
+
+# Evaluation parameters
+collar_tolerance: 0.1  # seconds
+min_speech_duration: 0.1  # seconds
+min_silence_duration: 0.1  # seconds
+
+# Post-processing
+post_processing:
+  smoothing_window: 3
+  min_speech_frames: 5
+  min_silence_frames: 5

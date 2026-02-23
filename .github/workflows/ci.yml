@@ -1,0 +1,207 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install black ruff pytest
+    
+    - name: Run black
+      run: black --check src/ scripts/ demo/
+    
+    - name: Run ruff
+      run: ruff check src/ scripts/ demo/
+    
+    - name: Run pre-commit
+      run: |
+        pip install pre-commit
+        pre-commit run --all-files
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.10', '3.11', '3.12']
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-cov
+    
+    - name: Run tests
+      run: |
+        pytest tests/ --cov=src --cov-report=xml --cov-report=html
+    
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+
+  demo-test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install streamlit
+    
+    - name: Test demo import
+      run: |
+        python -c "import demo.streamlit_app; print('Demo imports successfully')"
+    
+    - name: Test demo functionality
+      run: |
+        python -c "
+        from src.vad.models import EnergyVAD, CNNVAD, TransformerVAD
+        from src.vad.data import SyntheticVADDataset
+        from src.vad.metrics import VADMetrics
+        import numpy as np
+        
+        # Test model creation
+        energy_model = EnergyVAD()
+        cnn_model = CNNVAD()
+        transformer_model = TransformerVAD()
+        
+        # Test dataset creation
+        dataset = SyntheticVADDataset(num_samples=10, duration=2.0)
+        
+        # Test metrics
+        metrics = VADMetrics()
+        
+        # Test prediction
+        audio = np.random.randn(16000)
+        predictions = energy_model.predict(audio)
+        
+        print('All demo components work correctly')
+        "
+
+  build:
+    needs: [lint, test, demo-test]
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    
+    - name: Install build dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install build twine
+    
+    - name: Build package
+      run: python -m build
+    
+    - name: Check package
+      run: twine check dist/*
+    
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: dist
+        path: dist/
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install safety bandit
+    
+    - name: Run safety check
+      run: safety check
+    
+    - name: Run bandit security check
+      run: bandit -r src/ scripts/ demo/
+
+  performance:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Run performance test
+      run: |
+        python -c "
+        import time
+        import numpy as np
+        from src.vad.models import EnergyVAD, CNNVAD, TransformerVAD
+        
+        # Test performance
+        audio = np.random.randn(16000)  # 1 second audio
+        
+        models = {
+            'EnergyVAD': EnergyVAD(),
+            'CNNVAD': CNNVAD(),
+            'TransformerVAD': TransformerVAD(),
+        }
+        
+        for name, model in models.items():
+            start_time = time.time()
+            predictions = model.predict(audio)
+            end_time = time.time()
+            
+            processing_time = end_time - start_time
+            print(f'{name}: {processing_time:.4f} seconds')
+            
+            # Check that processing time is reasonable (less than 1 second)
+            assert processing_time < 1.0, f'{name} is too slow: {processing_time:.4f}s'
+        
+        print('All models meet performance requirements')
+        "

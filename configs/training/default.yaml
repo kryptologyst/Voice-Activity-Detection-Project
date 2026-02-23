@@ -1,0 +1,28 @@
+# @package training
+
+_target_: src.vad.train.trainer.VADTrainer
+
+# Training parameters
+learning_rate: 0.001
+batch_size: 32
+num_epochs: 100
+gradient_clip_val: 1.0
+
+# Optimizer
+optimizer:
+  _target_: torch.optim.Adam
+  lr: 0.001
+  weight_decay: 1e-4
+
+# Scheduler
+scheduler:
+  _target_: torch.optim.lr_scheduler.ReduceLROnPlateau
+  mode: "min"
+  factor: 0.5
+  patience: 10
+
+# Early stopping
+early_stopping:
+  patience: 20
+  min_delta: 0.001
+  monitor: "val_loss"

@@ -1,0 +1,39 @@
+# @package _global_
+
+defaults:
+  - _self_
+  - model: energy_vad
+  - data: synthetic
+  - training: default
+  - evaluation: vad_metrics
+
+# Experiment configuration
+experiment:
+  name: "vad_experiment"
+  version: "1.0"
+  tags: ["vad", "speech", "research"]
+  
+# Paths
+paths:
+  data_dir: "data"
+  checkpoint_dir: "checkpoints"
+  log_dir: "logs"
+  assets_dir: "assets"
+
+# Device configuration
+device: "auto"  # auto, cpu, cuda, mps
+
+# Random seed for reproducibility
+seed: 42
+
+# Logging
+logging:
+  level: "INFO"
+  log_every_n_steps: 100
+  save_every_n_epochs: 5
+
+# Privacy and ethics
+privacy:
+  anonymize_filenames: true
+  remove_pii_from_logs: true
+  research_only: true

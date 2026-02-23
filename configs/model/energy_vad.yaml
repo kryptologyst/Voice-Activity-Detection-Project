@@ -1,0 +1,18 @@
+# @package model
+
+_target_: src.vad.models.energy_vad.EnergyVAD
+
+# Model parameters
+frame_size: 1024
+hop_size: 512
+threshold: 0.02
+energy_normalization: true
+
+# Feature extraction
+features:
+  n_fft: 1024
+  hop_length: 512
+  win_length: 1024
+  n_mels: 80
+  fmin: 0
+  fmax: 8000
